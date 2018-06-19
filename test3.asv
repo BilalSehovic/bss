@@ -22,7 +22,7 @@ function varargout = test3(varargin)
 
 % Edit the above text to modify the response to help test3
 
-% Last Modified by GUIDE v2.5 19-Jun-2018 03:06:48
+% Last Modified by GUIDE v2.5 19-Jun-2018 02:18:26
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -414,18 +414,14 @@ kod = getOdabraniKod(hObject, eventdata, handles);
 figure('units','normalized','outerposition',[0 0 1 1]);
 legendData = cell(1, from-to+1);
 max1 = 0;
-max2 = '';
 for i=from:to
     filename = ['Diabetes-Data\data-' num2str([i:i].','%02d')];
     disp(filename);
     data = readtable(filename, 'Delimiter', '\t', 'ReadVariableNames', false, 'ReadRowNames', false);
     filteredbyKod = data(data.Var3==kod,:);
     
-    if max(filteredbyKod.Var4) > max1
-       max1 = max(filteredbyKod.Var4);
-       max2 = num2str([i:i].','%02d');
-       tmp = filteredbyKod(filteredbyKod.Var4==max1,:);
-       max3 = [char(tmp{1,1}) ' - ' char(tmp{1,2})];
+    if max(data.Var4) > max1
+       max1 = max(data.Var4);
     end
     
     t = linspace(0,length(filteredbyKod.Var4),length(filteredbyKod.Var4));
@@ -441,7 +437,7 @@ for i=from:to
 %     title(datum);
 end
 
-s={['Maximum vrijednost: ' num2str(max1)];['Pacijent: ' max2]; ['Vrijeme i datum: ' max3];}
-figure;
-set(axes,'visible','off')
-text(0.2,0.5,s)
+s={'(Spade)   J875';'(Heart)   KT64';'(Diamond) QJ842';'(Club)    AKQJ952'}
+hF=figure; set(hF,'color',[1 1 1])
+hA=axes; set(hA,'color',[1 1 1],'visible','off')
+text(0.5,0.5,s)
