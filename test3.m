@@ -22,7 +22,7 @@ function varargout = test3(varargin)
 
 % Edit the above text to modify the response to help test3
 
-% Last Modified by GUIDE v2.5 21-Jun-2018 22:57:17
+% Last Modified by GUIDE v2.5 23-Jun-2018 12:43:06
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -271,22 +271,46 @@ if offset == 1 && index_selected+1 < length(file_list)
     datum = file_list{index_selected+1};
 end
 
-function [kodovi] = getKodove(hObject, eventdata, handles, what)
+function [kodovi] = getKodove(hObject, eventdata, handles, what, from, to)
 listbox2_list = get(handles.listbox2,'String');
 kodovi1 = char(listbox2_list(:,:));
 kodovi2 = kodovi1(:,1:3);
 kodovi3 = str2num(kodovi2);
+disp(class(kodovi1));
+disp(length(kodovi1));
+disp(size(kodovi1,1));
+kodovi1_filtrirani = [];
+for i=1:size(kodovi1,1)
+    kod = str2double(kodovi1(i,1:3));
+    if kod >= from && kod <= to
+        kodovi1_filtrirani = [kodovi1_filtrirani; kodovi1(i,:)];
+    end
+end
 
 kodovi = [];
 
 if what == 1
     kodovi = kodovi1;
+    if from >= 48 && from <= 64 && to >= 48 && to <= 64
+       kodovi = kodovi1_filtrirani; 
+    end
 elseif what == 2
     kodovi = kodovi2;
 elseif what == 3
     kodovi = kodovi3;
 end
 
+function [color] = rgbColorBolder(color)
+if color <= 0.25
+    color = 0;
+elseif color > 0.25 && color <= 0.5
+    color = 0.375;
+elseif color > 0.5 && color <= 0.75
+    color = 0.625;
+elseif color > 0.75
+    color = 1;
+end
+    
 function listbox3_refresh(hObject, eventdata, handles)
 % hObject    handle to pushbutton1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -318,8 +342,10 @@ disp(odabranDan);
 if get(handles.checkbox2,'Value')==0
     figure;
     dn=datenum(char(odabranDan{:,2}),'HH:MM');
+    odabranDan{:,4} = odabranDan{:,4} / 18;
     stem(dn,odabranDan{:,4});
     datetick('x', 'HH:MM', 'keepticks', 'keeplimits');
+    ylabel('mmol/L', 'FontSize', 18);
     title(datum);
 else
     datumminus = getOdabraniDatum(hObject, eventdata, handles, -1);
@@ -330,20 +356,26 @@ else
     figure('units','normalized','outerposition',[0 0 1 1]);
     subplot(1,3,1);
     dn=datenum(char(danNazad{:,2}),'HH:MM');
+    danNazad{:,4} = danNazad{:,4} / 18;
     stem(dn,danNazad{:,4});
     datetick('x', 'HH:MM', 'keepticks');
+    ylabel('mmol/L', 'FontSize', 18);
     title(datumminus);
 
     subplot(1,3,2);
     dn=datenum(char(odabranDan{:,2}),'HH:MM');
+    odabranDan{:,4} = odabranDan{:,4} / 18;
     stem(dn,odabranDan{:,4});
     datetick('x', 'HH:MM', 'keepticks');
+    ylabel('mmol/L', 'FontSize', 18);
     title(datum);
 
     subplot(1,3,3);
     dn=datenum(char(danNaprijed{:,2}),'HH:MM');
+    danNaprijed{:,4} = danNaprijed{:,4} / 18;
     stem(dn,danNaprijed{:,4});
     datetick('x', 'HH:MM', 'keepticks');
+    ylabel('mmol/L', 'FontSize', 18);
     title(datumplus);
 end
 
@@ -444,7 +476,12 @@ for i=from:to
     end
     
     t = linspace(0,length(filteredbyKod.Var4),length(filteredbyKod.Var4));
-    plot(t,filteredbyKod.Var4, 'DisplayName', filename);
+    if get(handles.checkbox4,'Value')==0
+        plot(t,filteredbyKod.Var4, 'DisplayName', filename);
+    else
+        stem(t,filteredbyKod.Var4, 'DisplayName', filename);
+        ylim(ylim + [0 3])
+    end
     hold on;
     
     legendData(1,i-from+1) = {['pacijent ' num2str([i:i].','%02d')]};
@@ -456,7 +493,7 @@ for i=from:to
 %     title(datum);
 end
 
-s={['Maximum vrijednost: ' num2str(max1)];['Pacijent: ' max2]; ['Vrijeme i datum: ' max3];}
+s={['Maximum vrijednost: ' num2str(max1)];['Pacijent: ' max2]; ['Vrijeme i datum: ' max3];};
 figure;
 set(axes,'visible','off')
 text(0.2,0.5,s)
@@ -531,7 +568,7 @@ end
 
 figure('units','normalized','outerposition',[0 0 1 1]);
 pie(counteri);
-legend(getKodove(hObject, eventdata, handles, 1), 'location', 'best');
+legend(getKodove(hObject, eventdata, handles, 1, 1, 100), 'location', 'best');
 
 
 % --- Executes on button press in pushbutton9.
@@ -581,32 +618,115 @@ function pushbutton11_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton11 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+from = str2double(get(handles.edit3, 'String'));
+to = str2double(get(handles.edit4, 'String'));
+
+if from < 48 || from > 70
+    from = 48;
+    set(handles.edit3, 'String', '48');
+end
+if to > 64 || to < 0
+    to = 64;
+    set(handles.edit4, 'String', '64');
+end
+
 data = getOdabranaData(hObject, eventdata, handles);
 
-sviDani = data(data.Var3>47 & data.Var3<65,:);
-disp(sviDani);
+sviDani = data(data.Var3>=from & data.Var3<=to,:);  % filter za odabrane kodove
 
 ch = strcat(char(sviDani{:,1}), '/', char(sviDani{:,2}));
 
 sviDani{:,4} = sviDani{:,4} / 18;   % mg/dl -> mmol/L
+disp(sviDani);
 
 figure('units','normalized','outerposition',[0 0 1 1.2]);
 dn = datenum(ch, 'mm-dd-yyyy/HH:MM');
+
+boje = cell(to,1);
+% boje za stem graf
+%//////////////////////////////////////
+for i=1:to+1
+    if i >= from && i <= to
+        r = rgbColorBolder(rand(1));
+        g = rgbColorBolder(rand(1));
+        b = rgbColorBolder(rand(1));
+        boje{i,1} = [r g b];
+    else
+        boje{i,1} = [0 0 0];
+    end
+end
+boje = cell2mat(boje);
+%//////////////////////////////////////
 
 for i=1:size(sviDani,1)
     curr = sviDani{i,4};
     currDay = datenum(ch(i,:), 'mm-dd-yyyy/HH:MM');
     %////////////////float2rgb//////////////////////
-    maxx = max(sviDani{:,4})+1;
-    f = curr/maxx; % your float
-    cm = colormap; % returns the current color map
-    colorID = max(1, sum(f > [0:1/length(cm(:,1)):1]));
-    myColor = cm(colorID, :); % returns your color
+%     maxx = max(sviDani{:,4})+1;
+%     f = curr/maxx; % your float
+%     cm = colormap; % returns the current color map
+%     colorID = max(1, sum(f > [0:1/length(cm(:,1)):1]));
+%     myColor = cm(colorID, :); % returns your color
     %//////////////////////////////////////////////////////
-    stem(currDay,curr, 'color', myColor);
+    stem(currDay,curr, 'color', boje(sviDani{i,3},:));
     hold on;
 end
 
-legend(getKodove(hObject, eventdata, handles, 1), 'location', 'best');
+legend(getKodove(hObject, eventdata, handles, 1, from, to), 'location', 'best');
 datetick('x', 'mm-dd-yyyy/HH:MM', 'keepticks', 'keeplimits');
-ylabel('mmol/L', 'FontSize', 18);   
+ylabel('mmol/L', 'FontSize', 18);
+
+
+
+function edit3_Callback(hObject, eventdata, handles)
+% hObject    handle to edit3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit3 as text
+%        str2double(get(hObject,'String')) returns contents of edit3 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit3_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit4_Callback(hObject, eventdata, handles)
+% hObject    handle to edit4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit4 as text
+%        str2double(get(hObject,'String')) returns contents of edit4 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit4_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in checkbox4.
+function checkbox4_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox4
